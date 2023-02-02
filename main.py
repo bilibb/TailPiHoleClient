@@ -42,7 +42,7 @@ def ping_sweep():
 
 
 def tail(ip):
-    ip = "192.168.0.4"
+    #ip = "192.168.0.4"
     cmd = "cat {} | grep -B1 {}".format(logfile, ip)
     subprocess.call(cmd, shell=True)
 
