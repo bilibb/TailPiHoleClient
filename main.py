@@ -3,11 +3,21 @@ import nmap
 import sys
 import re
 import subprocess
-from subprocess import PIPE, Popen
-from collections import deque
 
 network = "192.168.0.0/24"
 logfile = "log/pihole.log"
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 
 """
 https://serverfault.com/a/665337
@@ -19,8 +29,6 @@ nmap -sn 192.168.0.0/24
 
 Example: nmap -sn -T5 -n --min-parallelism 100 192.168.0.0/24
 """
-
-
 def ping_sweep():
     hosts = {}
     nm = nmap.PortScanner()
@@ -44,7 +52,8 @@ def ping_sweep():
 
 
 def tail(ip):
-    """from http://blog.kagesenshi.org/2008/02/teeing-python-subprocesspopen-output.html 
+    """
+    from http://blog.kagesenshi.org/2008/02/teeing-python-subprocesspopen-output.html
     """  
     match = [ ip, 'query[A]' ]     
     f = subprocess.Popen(['tail','-f',logfile],stdout=subprocess.PIPE,stderr=subprocess.PIPE)      
