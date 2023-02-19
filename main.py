@@ -3,6 +3,8 @@ import nmap
 import sys
 import re
 import subprocess
+from subprocess import PIPE, Popen
+from collections import deque
 
 network = "192.168.0.0/24"
 logfile = "log/pihole.log"
@@ -42,9 +44,18 @@ def ping_sweep():
 
 
 def tail(ip):
-    #ip = "192.168.0.4"
-    cmd = "cat {} | grep -B1 {}".format(logfile, ip)
-    subprocess.call(cmd, shell=True)
+    """from http://blog.kagesenshi.org/2008/02/teeing-python-subprocesspopen-output.html 
+    """  
+    match = [ ip, 'query[A]' ]     
+    f = subprocess.Popen(['tail','-f',logfile],stdout=subprocess.PIPE,stderr=subprocess.PIPE)      
+    while True:                                                
+        line1 = f.stdout.readline().decode("utf-8") 
+        if all(c in line1 for c in match):   
+            line2 = f.stdout.readline().decode("utf-8")  
+            if 'blocked' in line2:        
+                start = 'query[A]'      
+                end = 'from'         
+                print(bcolors.FAIL + line1[0:15] + ':' + line1[line1.find(start)+len(start):line1.rfind(end)] + bcolors.ENDC)
 
 
 def check_access():
@@ -54,4 +65,5 @@ def check_access():
 
 if __name__ == "__main__":
     check_access()
-    tail(ping_sweep())
+    ip = ping_sweep()
+    tail(ip)

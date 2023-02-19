@@ -1,6 +1,7 @@
 # TailPiHoleClient
 
 ## TODO: 
+* Farbe
 * Lizenz ersetzen
 * Einheitliche Formatierung der Liste
 
