@@ -2,8 +2,8 @@
 
 ## TODO: 
 * Farbe
-* Lizenz ersetzen
 * Einheitliche Formatierung der Liste
+* Code Reduzierung
 
 ## Abhängigkeiten
 * Nmap
@@ -29,3 +29,4 @@ pip install -r requirements.txt
 ## Ausführen
 * Ggf. Pfad zum Logfile und Netzwerk in `main.py` anpassen
 * `python3 main.py`
+* `python3 main.py -h` zum Anzeigen der Hilfe und möglichen Parameter

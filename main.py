@@ -3,9 +3,11 @@ import nmap
 import sys
 import re
 import subprocess
+import argparse
 
 network = "192.168.0.0/24"
 logfile = "log/pihole.log"
+
 
 class bcolors:
     HEADER = '\033[95m'
@@ -29,6 +31,8 @@ nmap -sn 192.168.0.0/24
 
 Example: nmap -sn -T5 -n --min-parallelism 100 192.168.0.0/24
 """
+
+
 def ping_sweep():
     hosts = {}
     nm = nmap.PortScanner()
@@ -39,6 +43,7 @@ def ping_sweep():
         hosts[zaehler] = x + "   " + nm[x].hostname()
         zaehler += 1
 
+    # TODO: Loop
     for key, value in hosts.items():
         print(key, ' : ', value)
 
@@ -51,20 +56,55 @@ def ping_sweep():
     return re.compile(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})').match(hosts[host_number]).group(1)
 
 
-def tail(ip):
-    """
-    from http://blog.kagesenshi.org/2008/02/teeing-python-subprocesspopen-output.html
-    """  
-    match = [ ip, 'query[A]' ]     
-    f = subprocess.Popen(['tail','-f',logfile],stdout=subprocess.PIPE,stderr=subprocess.PIPE)      
-    while True:                                                
-        line1 = f.stdout.readline().decode("utf-8") 
-        if all(c in line1 for c in match):   
-            line2 = f.stdout.readline().decode("utf-8")  
-            if 'blocked' in line2:        
-                start = 'query[A]'      
-                end = 'from'         
-                print(bcolors.FAIL + line1[0:15] + ':' + line1[line1.find(start)+len(start):line1.rfind(end)] + bcolors.ENDC)
+def tail_blocked(ip):
+    match = [ip, 'query[A]']
+    blocked = ['blacklisted', 'blocked']
+    f = subprocess.Popen(['tail', '-f', logfile], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    while True:
+        line1 = f.stdout.readline().decode("utf-8")
+        if all(c in line1 for c in match):
+            line2 = f.stdout.readline().decode("utf-8")
+            if any(c in line2 for c in blocked):
+                start = 'query[A]'
+                end = 'from'
+                print(bcolors.FAIL + line1[0:15] + ':' + line1[line1.find(start) + len(start):line1.rfind(
+                    end)] + bcolors.ENDC)
+
+
+def tail_unblocked(ip):
+    match = [ip, 'query[A]']
+    allowed = ['forwarded', 'cached']
+    f = subprocess.Popen(['tail', '-f', logfile], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    while True:
+        line1 = f.stdout.readline().decode("utf-8")
+        if all(c in line1 for c in match):
+            line2 = f.stdout.readline().decode("utf-8")
+            if any(c in line2 for c in allowed):
+                start = 'query[A]'
+                end = 'from'
+                print(bcolors.OKGREEN + line1[0:15] + ':' + line1[line1.find(start) + len(start):line1.rfind(
+                    end)] + bcolors.ENDC)
+
+
+def tail_both(ip):
+    match = [ip, 'query[A]']
+    allowed = ['forwarded', 'cached']
+    blocked = ['blacklisted', 'blocked']
+    f = subprocess.Popen(['tail', '-f', logfile], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    while True:
+        line1 = f.stdout.readline().decode("utf-8")
+        if all(c in line1 for c in match):
+            line2 = f.stdout.readline().decode("utf-8")
+            if any(c in line2 for c in blocked):
+                start = 'query[A]'
+                end = 'from'
+                print(bcolors.FAIL + line1[0:15] + ':' + line1[line1.find(start) + len(start):line1.rfind(
+                    end)] + bcolors.ENDC)
+            if any(c in line2 for c in allowed):
+                start = 'query[A]'
+                end = 'from'
+                print(bcolors.OKGREEN + line1[0:15] + ':' + line1[line1.find(start) + len(start):line1.rfind(
+                    end)] + bcolors.ENDC)
 
 
 def check_access():
@@ -73,6 +113,19 @@ def check_access():
 
 
 if __name__ == "__main__":
+    argparser = argparse.ArgumentParser(prog='TailPiHoleClient', description='Display requested domains from one '
+                                                                             'Pi-Hole user')
+
+    argparser.add_argument("-u", action='store_true', required=False, help="Only allowed domains")
+    argparser.add_argument("-b", action='store_true', required=False, help="Only blocked domains")
+
+    args = argparser.parse_args()
+
     check_access()
-    ip = ping_sweep()
-    tail(ip)
+
+    if args.b:
+        tail_blocked(ping_sweep())
+    elif args.u:
+        tail_unblocked(ping_sweep())
+    else:
+        tail_both(ping_sweep())
